@@ -112,13 +112,13 @@ def mangler(input_: Iterator[Any]) -> Iterator[Any]:
 
 def demangler(input_: STREAM_CDC) -> STREAM_CDC:
     """
-    Get a CDC stream with possible duplicates and out of order
-    messages, and produce a legit stream.
+    Get a CDC stream with possible duplicates and out of order messages, and produce a legit 
+    stream.
 
     This still produces output out of order. For ex - if all messages corresponding to t=20
     are received after all the messages for t=21. There is no way you would have know there
     was an outstanding timestamp at 20, when clearing 21. Maybe, the input progress statements
-    need to be augments with the value for the previous timestamp too. That will solve this.
+    need to be augmented with the value for the previous timestamp too. That will solve this.
     """
     frontier: int = -1
     progress_queue: dict[int, Progress] = {}
