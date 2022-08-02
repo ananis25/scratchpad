@@ -6,8 +6,6 @@ The posts are in reverse chronological order by the date they were added though 
 
 ## Index
 
-<hr/>
-
 **[Nicer SQL syntax using FunSQL](./jupyter-notebooks/against-sql.ipynb)**
 * date: `2022-06-27`
 * topic: Jupyter notebook that addresses some of the SQL syntax quirks mentioned in the [against-sql](https://www.scattered-thoughts.net/writing/against-sql/) post by Jamie Brandon. Uses the `FunSQL` python library. 
