@@ -2,7 +2,7 @@
 
 This repository hosts notes/notebooks and one off explorations, so I can look them up easily. 
 
-The posts are in reverse chronological order by the date they were added though a lot of them date back multiple years. 
+The posts are in reverse chronological order by the date they were added, though most date back to further before. 
 
 ## Index
 
@@ -24,6 +24,13 @@ The posts are in reverse chronological order by the date they were added though 
 * date: `2020-04-20`
 * topic: What I can understand from the pitch for `Metric layer` tools. 
 * tiny-notes: Seems like a nice way to keep analytics disciplined. Not sure if it warrants a separate service though, maybe as a library that you can integrate with your existing analytics code. 
+
+<hr/>
+
+**[Node-and-wire editors for analytics](./md-posts/node_editors.md)**
+* date: `2021-12-20`
+* topic: Notes on what I like about node-and-wire editors for working with data. 
+* tiny-notes: What I would really like is the Jupyter workflow, but cells backed to a content addressable storage. So, very much like observable. In fact, don't stop at data science, make even regular programming work that way. Ex - [Unison](https://www.unisonweb.org).
 
 <hr/>
 
