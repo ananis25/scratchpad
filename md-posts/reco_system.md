@@ -37,12 +37,14 @@ We go over these one at a time.
 The input API request from platform's backend specifies the active user and the content we need to select the questions from. We store all the relevant information needed in a separate datastore managed by us and don't make any other API calls.
 
 - **Content**
-The platform has multiple ways to organize the learning content based on how it is being served to the student. The standard way is to start from the school curriculum (a lot of variance across the country), then segment it successively by the grade, subject, chapters and sections. Another approach is to plan around specific learning outcomes for the student, organizing lessons/questions by teaching units and goals that can span subjects or school levels.
+
+    The platform has multiple ways to organize the learning content based on how it is being served to the student. The standard way is to start from the school curriculum (a lot of variance across the country), then segment it successively by the grade, subject, chapters and sections. Another approach is to plan around specific learning outcomes for the student, organizing lessons/questions by teaching units and goals that can span subjects or school levels.
     
     To stay agnostic to the content hierarchy, we introduced a construct called `Question unit`, which covers all the ways to group questions. Each question unit either maps to a list of questions directly (section -> question) or recursively (chapter -> section, section -> question). We query the platform's content database everyday to fetch the current set of question unit relationships and save it to our datastore. When serving the API, the request lists a set of question units to recommend from, which we resolve to a list of questions.
     
 - **User history**
-To provide an adaptive experience, we want to track how the student performed interacted with the content previously and in the current session. Hence, we record all the student question attempts on the Toppr platform. Each attempt is identified by the user who made it and the question attempted, with other attributes - the user response, time spent on it, if it was correct, etc.
+
+    To provide an adaptive experience, we want to track how the student performed interacted with the content previously and in the current session. Hence, we record all the student question attempts on the Toppr platform. Each attempt is identified by the user who made it and the question attempted, with other attributes - the user response, time spent on it, if it was correct, etc.
     
     Based on the request parameters, we filter the set of relevant attempts to that required by the recommendation model.
     
@@ -50,11 +52,16 @@ To provide an adaptive experience, we want to track how the student performed in
 We experimented with a bunch of different storage choices and data models before selecting Postgres.
 
 - **In-memory**
-In an earlier iteration, the recommender was written in Dlang, with all the user history and content data held in memory as key value pairs. However, it was not extensible and as the usage grew, it could only be scaled vertically and suffered from longer garbage collection pauses.
+
+    In an earlier iteration, the recommender was written in Dlang, with all the user history and content data held in memory as key value pairs. However, it was not extensible and as the usage grew, it could only be scaled vertically and suffered from longer garbage collection pauses.
+
 - **Redis**
-When refactoring the system, we tried to use Redis which offered some useful data structures. However, modeling the content data (which has a tree structure) required some ingenuity, while the user attempt history which was much bigger needed duplication to make querying efficient.
+    
+    When refactoring the system, we tried to use Redis which offered some useful data structures. However, modeling the content data (which has a tree structure) required some ingenuity, while the user attempt history which was much bigger needed duplication to make querying efficient.
+
 - **Postgres**
-The relational model was easy to adapt for content data since the question unit hierarchy could be represented as a graph, and SQL makes it easy to query over it. The user attempt history also has a consistent schema, and creating indexes over both user and question ids lets us slice it it conveniently, including constraints from the content relations. Since these queries can get expensive, we also use a small redis service to cache results which can be incrementally updated.
+    
+    The relational model was easy to adapt for content data since the question unit hierarchy could be represented as a graph, and SQL makes it easy to query over it. The user attempt history also has a consistent schema, and creating indexes over both user and question ids lets us slice it it conveniently, including constraints from the content relations. Since these queries can get expensive, we also use a small redis service to cache results which can be incrementally updated.
     
     We opted for the managed database service by the cloud provider so there have been no operational hiccups. Postgres has scaled well for our requirements, and our data model will allow us to shard the attempts history data when query performance degrades.
     
@@ -136,7 +143,7 @@ When a recommendation request shows up for a student working on the unit,
 - Fetch the full attempt history for the unit, and embeddings for all the candidate questions. Note the attempt logs would have grown as the user progresses through the unit.
 - For each candidate question, the score for the student-question pair can now be evaluated.
 
-The embedding model setup ensures that incremental training is inexpensive and can be done in real time, while approximating the output of a full training fairly well. By making a full train more frequent that once every 24h, we can further ensure that the deviation is minimal. This lets us capture the student progress during the day neatly.
+The embedding model setup ensures that incremental training is inexpensive and can be done in real time, while approximating the output of a full training fairly well. By making a full train step more frequent than once every 24h, we can further ensure that the deviation is minimal. This lets us capture the student progress during the daytime neatly.
 
 ## Recommendation strategy
 
@@ -144,17 +151,21 @@ This component uses the student-question scores computed from the ML model and s
 
 The strategy module also allows us to do more things without tweaking the rest of the response pipeline.
 
-- If the network latency is high, the API response can be a batch of questions instead of one at a time.
-- The recommendation policy could evaluate scores from multiple ML models before selecting a question. We use this to A/B test hyperparameters for the embedding model.
-- The adaptive system was extended to compile a set of take-home problems for students, and email nudges when they log in infrequently.
+- A significant fraction of users were experiencing high network latencies, so we tweaked the API response to be a batch of questions instead of one at a time. The next question batch is then pre-fetched before the previous one runs out. While this trades off some accuracy, it eliminated any delays in users seeing the next question. 
+
+- The recommendation policy could evaluate scores from multiple ML models before selecting a question. We used this to A/B test hyperparameters for the user-question embedding models.
+
+- The adaptive system was extended to more use cases. For ex - compiling a set of take-home problems for students who wanted more topic specific practice. Another one was sending the students email nudges when they logged in infrequently.
 
 # System diagram
 
 The recommendation system lives across three process boundaries.
 
-- Postgres server
-- API server
-- Model training
+- **Postgres server**: It is a single point of failure since both the interaction history and the model parameters are stored here. However, the managed service provides daily backups and let us configure a read replica for fallback. Thus, any database downtime only means we can't update our recommendation model for that duration. Any missed user interaction data is backfilled from the API logs for that period. 
+
+- **API server**: This is a lightweight python web service that is stateless and only does tiny bits of compute. We used Docker containers to deploy copies of it in parallel, with auto-scaling set up by the main platform team per the live usage. 
+
+- **Model training**: This runs only periodically, so we spin up temporary compute instances each time to update the model parameters. 
 
 ![reco-system-flowchart.svg](../assets/reco-system-flowchart.svg)
 
