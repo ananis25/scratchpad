@@ -1,6 +1,6 @@
 # writing-a-recommendation-api
 
-At a previous workplace, we managed a recommendation system as a component of an adaptive learning system for school students.  This was never polished enough to go on the technical blog, so here is the draft. 
+At a previous workplace, we created a recommendation system as a component of an adaptive learning system for school students.  This descriptive post was never polished enough to go on the technical blog, so here is the draft. 
 
 # Background
 
@@ -161,10 +161,17 @@ The recommendation system lives across three process boundaries.
 # Other considerations
 
 - **Creating a session corresponding to each user session and making recommendations in that context.**
-This would allow for richer interaction models - how long the student is into the current session, whether they are jumping around concepts or working through just one, etc. However, this introduces coupling with the clients' platform and harder to experiment with recommendation models. Further, a stateless API proved easier to scale horizontally as both the num of users, and num of requests per user grew.
+
+    This would allow for richer interaction models - how long the student is into the current session, whether they are jumping around concepts or working through just one, etc. However, this introduces coupling with the clients' platform and harder to experiment with recommendation models. Further, a stateless API proved easier to scale horizontally as both the num of users, and num of requests per user grew.
+
 - **Is the model well calibrated?**
-Yes. We evaluate our predictions for a student solving a question vs how they actually fared each day. We bucket predictions by probability of success into segments (30-40 pc, 40-50 pc, ...) and evaluate the percent of correct responses in each bucket. Besides the tail regions, they coincide reasonably well.
+
+    Yes. We evaluate our predictions for a student solving a question vs how they actually fared each day. We bucket predictions by probability of success into segments (30-40 pc, 40-50 pc, ...) and evaluate the percent of correct responses in each bucket. Besides the tail regions, they coincide reasonably well.
+
 - **More complex modeling**
-We continue to experiment with feedforward and recurrent neural network models but so far haven't seen enough improvement in prediction accuracy to warrant switching to them. Collaborative filter models we use right now accommodate new users and questions nicely, and the model predictions have also been reasonable. We believe the recommendation policy is a more important lever to improve outcomes at present.
+    
+    We continue to experiment with feedforward and recurrent neural network models but so far haven't seen enough improvement in prediction accuracy to warrant switching to them. Collaborative filter models we use right now accommodate new users and questions nicely, and the model predictions have also been reasonable. We believe the recommendation policy is a more important lever to improve outcomes at present.
+
 - **Postgres as relational database**
-We did empirical testing with both Postgres and MySQL database servers on similarly powered machines. MySQL query performance was somewhat better even for test size datasets, however Postgres offered smaller variance and a better python adapter library in `psycopg2` (we did not use ORMs since one object for each data row is wasteful when doing data analysis).
+    
+    We did empirical testing with both Postgres and MySQL database servers on similarly powered machines. MySQL query performance was somewhat better even for test size datasets, however Postgres offered smaller variance and a better python adapter library in `psycopg2` (we did not use ORMs since one object for each data row is wasteful when doing data analysis).
